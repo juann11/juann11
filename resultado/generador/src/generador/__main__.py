@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from generador.ascii import svg_ascii
+from generador.ciudad import svg_ciudad
 from generador.culebrita import svg_culebrita
 from generador.datos import obtener
 from generador.panel import svg_panel
@@ -14,4 +15,5 @@ datos = obtener()
 (salida / "terminal.svg").write_text(svg_ascii(), encoding="utf-8")
 (salida / "panel.svg").write_text(svg_panel(datos), encoding="utf-8")
 (salida / "culebrita.svg").write_text(svg_culebrita(datos["dias"]), encoding="utf-8")
+(salida / "ciudad.svg").write_text(svg_ciudad(datos["dias"]), encoding="utf-8")
 print(f"SVG listos en {salida.resolve()}")

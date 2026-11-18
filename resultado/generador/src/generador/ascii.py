@@ -32,16 +32,38 @@ def _revuelto(linea: str, semilla: int) -> str:
     return "".join(c if c == " " else azar.choice("@#%&*+=$01") for c in linea)
 
 
-def _texto(x, y, contenido, color, tamano=16, largo=None, extra=""):
+def _texto(x, y, contenido, color, tamano=16, largo=None, extra="", clase=None):
     largo_attr = f' textLength="{largo:.1f}" lengthAdjust="spacingAndGlyphs"' if largo else ""
+    clase_attr = f' class="{clase}"' if clase else ""
     return (
-        f'<text x="{x}" y="{y}" fill="{color}" font-size="{tamano}" xml:space="preserve"'
+        f'<text{clase_attr} x="{x}" y="{y}" fill="{color}" font-size="{tamano}" xml:space="preserve"'
         f'{largo_attr} opacity="0">{escape(contenido)}{extra}</text>'
     )
 
 
+def _lluvia(columnas: int = 40, largo: int = 16) -> list[str]:
+    """Columnas de caracteres cayendo tipo Matrix, tenues para no tapar el nombre."""
+    azar = random.Random(11)
+    gotas = []
+    for i in range(columnas):
+        x = 14 + i * (ANCHO - 28) / (columnas - 1)
+        letras = [azar.choice("01ABCDEF<>/{}=*+$#") for _ in range(largo)]
+        # la última letra es la cabeza de la gota: más clara
+        tspans = "".join(
+            f'<tspan x="{x:.1f}" dy="15"{" fill=\"#d2ffd8\"" if j == largo - 1 else ""}>{escape(c)}</tspan>'
+            for j, c in enumerate(letras)
+        )
+        dur = azar.uniform(5, 11)
+        gotas.append(
+            f'<text class="lluvia" y="0" fill="{VERDE}" font-size="12" opacity="{azar.uniform(0.1, 0.22):.2f}">{tspans}'
+            f'<animateTransform attributeName="transform" type="translate" from="0 -{largo * 15}" to="0 {ALTO}" '
+            f'dur="{dur:.2f}s" begin="-{azar.uniform(0, dur):.2f}s" repeatCount="indefinite"/></text>'
+        )
+    return gotas
+
+
 def svg_ascii() -> str:
-    partes = []
+    partes = _lluvia()
     # 1) el comando se escribe letra por letra con un recorte que crece
     ancho_cmd = len(COMANDO) * ANCHO_LETRA
     pasos = [(i + 1) * ANCHO_LETRA for i in range(len(COMANDO))]
@@ -67,7 +89,7 @@ def svg_ascii() -> str:
         y = 112 + i * alto_linea
         t = inicio + i * 0.22
         partes.append(_texto(x, y, _revuelto(linea, i), TENUE, tamano, largo, aparece(t, CICLO, t + 0.45)))
-        partes.append(_texto(x, y, linea, VERDE, tamano, largo, aparece(t + 0.45, CICLO)))
+        partes.append(_texto(x, y, linea, VERDE, tamano, largo, aparece(t + 0.45, CICLO), clase="arte"))
 
     # 3) la descripción y el prompt con cursor que parpadea
     t = inicio + len(ARTE) * 0.22 + 0.7
