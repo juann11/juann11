@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from generador.ascii import KUVEX, svg_ascii
+from generador.ascii import ARTE, svg_ascii
 from generador.panel import svg_panel
 
 NS = "{http://www.w3.org/2000/svg}"
@@ -10,7 +10,7 @@ def test_ascii_es_svg_valido_con_todas_las_lineas():
     svg = svg_ascii()
     raiz = ET.fromstring(svg)
     textos = ["".join(t.itertext()) for t in raiz.iter(f"{NS}text")]
-    for linea in KUVEX:
+    for linea in ARTE:
         assert linea in textos
 
 
@@ -18,12 +18,12 @@ def test_ascii_esta_animado_y_con_ancho_fijo():
     raiz = ET.fromstring(svg_ascii())
     assert list(raiz.iter(f"{NS}animate"))
     # textLength obliga a que el bloque mida igual con cualquier fuente monoespaciada
-    lineas = [t for t in raiz.iter(f"{NS}text") if "".join(t.itertext()) in KUVEX]
+    lineas = [t for t in raiz.iter(f"{NS}text") if "".join(t.itertext()) in ARTE]
     assert all(t.get("textLength") for t in lineas)
 
 
-def test_lineas_kuvex_del_mismo_ancho():
-    assert len({len(l) for l in KUVEX}) == 1
+def test_lineas_del_arte_del_mismo_ancho():
+    assert len({len(l) for l in ARTE}) == 1
 
 
 def _datos():

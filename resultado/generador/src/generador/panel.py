@@ -83,4 +83,4 @@ def svg_panel(datos: dict) -> str:
     partes.append(f'<line x1="32" y1="230" x2="{ANCHO - 32}" y2="230" stroke="{BORDE}" stroke-dasharray="4 4"/>')
     partes += _cifras(datos)
     partes += _barras(datos["meses"])
-    return ventana(ANCHO, ALTO, f'{datos["usuario"]}@kuvex: ~/stats', "\n".join(partes))
+    return ventana(ANCHO, ALTO, f'{datos["usuario"]}@github: ~/stats', "\n".join(partes))
