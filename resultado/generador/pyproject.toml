@@ -1,4 +1,4 @@
-﻿[project]
+[project]
 name = "generador"
 version = "0.1.0"
 description = "Genera los SVG animados del perfil de GitHub"
