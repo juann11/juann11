@@ -41,6 +41,28 @@ def test_capa_valida_con_un_cuadro_por_dia_y_solo_se_comen_los_activos():
     raiz = ET.fromstring(_svg(capa_culebrita(dias, 84)))
     cuadros = [r for r in raiz.iter(f"{NS}rect") if r.get("class") == "dia"]
     assert len(cuadros) == 60
-    comidos = [r for r in cuadros if r.find(f"{NS}animate") is not None]
-    assert len(comidos) == sum(1 for d in dias if d["nivel"])
+    bloques = [r for r in raiz.iter(f"{NS}rect") if r.get("class") == "bloque"]
+    assert len(bloques) == sum(1 for d in dias if d["nivel"])
     assert list(raiz.iter(f"{NS}animateMotion"))
+
+
+def test_los_bloques_comidos_vuelven_cayendo_del_cielo():
+    dias = _dias([i % 3 for i in range(60)])
+    raiz = ET.fromstring(_svg(capa_culebrita(dias, 84)))
+    for bloque in [r for r in raiz.iter(f"{NS}rect") if r.get("class") == "bloque"]:
+        caida = bloque.find(f"{NS}animateTransform")
+        assert caida is not None and caida.get("type") == "translate"
+        alturas = [float(v.split()[1]) for v in caida.get("values").split(";")]
+        assert min(alturas) < 0  # arranca arriba del calendario
+        assert alturas[0] == alturas[-1] == 0  # el ciclo cierra en su puesto
+
+
+def test_todos_los_tiempos_van_en_orden_y_dentro_del_ciclo():
+    dias = _dias([i % 3 for i in range(60)])
+    raiz = ET.fromstring(_svg(capa_culebrita(dias, 84)))
+    for anim in raiz.iter():
+        if anim.get("keyTimes"):
+            tiempos = [float(t) for t in anim.get("keyTimes").split(";")]
+            assert tiempos == sorted(tiempos) and tiempos[0] == 0 and tiempos[-1] <= 1
+            lista = anim.get("keyPoints") or anim.get("values")
+            assert len(tiempos) == len(lista.split(";"))

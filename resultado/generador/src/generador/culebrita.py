@@ -45,35 +45,61 @@ def capa_culebrita(dias: list[dict], y0: float) -> list[str]:
     camino, comidos = recorrido(dias)
     columnas = max((c for c, _ in posiciones), default=0) + 1
     x0 = (ANCHO - columnas * PASO) / 2
-    duracion = (len(camino) + LARGO) * SEG_POR_PASO + 1.5
-    partes = [f'<g transform="translate({x0:.1f},{y0})">']
 
-    # el calendario: cada día comido se apaga cuando llega la cabeza y revive al final del ciclo
+    # tiempos en segundos: la culebrita termina, se esconde y luego llueven los bloques tipo Tetris
+    fin_culebra = (len(camino) - 1 + LARGO) * SEG_POR_PASO
+    # columna por columna de izquierda a derecha, y en cada una de abajo hacia arriba (se apilan)
+    orden_caida = sorted(comidos, key=lambda p: (p[0], -p[1]))
+    entre_bloques = min(0.07, 1.8 / max(len(orden_caida), 1))
+    empieza_caida = {p: fin_culebra + 0.4 + i * entre_bloques for i, p in enumerate(orden_caida)}
+    CAE, REBOTA = 0.5, 0.16
+    ultimo = max(empieza_caida.values(), default=fin_culebra)
+    duracion = ultimo + CAE + 2 * REBOTA + 1.0
+    dur = f'dur="{duracion:.2f}s" repeatCount="indefinite"'
+
+    def k(segundos: float) -> str:
+        return f"{segundos / duracion:.4f}"
+
+    partes = [f'<g transform="translate({x0:.1f},{y0})">']
+    # el calendario de fondo; los días comidos dejan su hueco oscuro
     for (col, fila), d in zip(posiciones, dias):
-        color = NIVELES[d["nivel"]]
-        anim = ""
-        if (col, fila) in comidos:
-            t = comidos[(col, fila)] * SEG_POR_PASO / duracion
-            anim = (
-                f'<animate attributeName="fill" values="{color};{NIVELES[0]};{color}" '
-                f'keyTimes="0;{t:.4f};0.97" dur="{duracion:.2f}s" calcMode="discrete" repeatCount="indefinite"/>'
-            )
+        color = NIVELES[0] if (col, fila) in comidos else NIVELES[d["nivel"]]
         partes.append(
-            f'<rect class="dia" x="{col * PASO}" y="{fila * PASO}" width="{CELDA}" height="{CELDA}" '
-            f'rx="2" fill="{color}">{anim}</rect>'
+            f'<rect class="dia" x="{col * PASO}" y="{fila * PASO}" width="{CELDA}" height="{CELDA}" rx="2" fill="{color}"/>'
+        )
+
+    # el bloque de cada día comido: desaparece cuando lo muerde la culebrita y vuelve cayendo del cielo
+    nivel_de = {p: d["nivel"] for p, d in zip(posiciones, dias)}
+    for (col, fila), t0 in empieza_caida.items():
+        t_comido = comidos[(col, fila)] * SEG_POR_PASO
+        arriba = (fila + 1) * PASO + 28  # arranca por encima del calendario
+        tiempos = ";".join(
+            ["0", k(t0 - 0.01), k(t0), k(t0 + CAE), k(t0 + CAE + REBOTA), k(t0 + CAE + 2 * REBOTA), "1"]
+        )
+        partes.append(
+            f'<rect class="bloque" x="{col * PASO}" y="{fila * PASO}" width="{CELDA}" height="{CELDA}" rx="2" '
+            f'fill="{NIVELES[nivel_de[(col, fila)]]}">'
+            f'<animate attributeName="opacity" values="1;0;1" keyTimes="0;{k(t_comido)};{k(t0)}" calcMode="discrete" {dur}/>'
+            # gravedad: acelera al caer (ease-in), rebota 3 px y se queda quieto
+            f'<animateTransform attributeName="transform" type="translate" '
+            f'values="0 0;0 0;0 -{arriba};0 0;0 -3;0 0;0 0" keyTimes="{tiempos}" calcMode="spline" '
+            f'keySplines="0 0 1 1;0 0 1 1;0.55 0 1 0.45;0.2 0.6 0.4 1;0.6 0 0.8 0.4;0 0 1 1" {dur}/></rect>'
         )
 
     # la culebrita: cada segmento hace el mismo camino, un paso detrás del anterior
     ruta = "M" + " L".join(f"{c * PASO} {f * PASO}" for c, f in camino)
     recorrido_seg = (len(camino) - 1) * SEG_POR_PASO
-    for k in range(LARGO):
-        arranca = k * SEG_POR_PASO / duracion
-        termina = (k * SEG_POR_PASO + recorrido_seg) / duracion
-        opacidad = 1 - k / (LARGO + 1)
+    for i in range(LARGO):
+        arranca = i * SEG_POR_PASO
+        termina = arranca + recorrido_seg
+        opacidad = 1 - i / (LARGO + 1)
         partes.append(
             f'<rect width="{CELDA}" height="{CELDA}" rx="3" fill="#e6edf3" fill-opacity="{opacidad:.2f}">'
-            f'<animateMotion path="{ruta}" dur="{duracion:.2f}s" repeatCount="indefinite" calcMode="linear" '
-            f'keyPoints="0;0;1;1" keyTimes="0;{arranca:.4f};{termina:.4f};1"/></rect>'
+            f'<animateMotion path="{ruta}" {dur} calcMode="linear" '
+            f'keyPoints="0;0;1;1" keyTimes="0;{k(arranca)};{k(termina)};1"/>'
+            # al terminar de comer se esconde mientras llueven los bloques
+            f'<animate attributeName="opacity" values="1;0" keyTimes="0;{k(fin_culebra + 0.1)}" calcMode="discrete" {dur}/>'
+            f"</rect>"
         )
     partes.append("</g>")
     return partes
