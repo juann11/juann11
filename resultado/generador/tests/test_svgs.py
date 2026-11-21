@@ -59,3 +59,10 @@ def test_panel_pinta_un_cuadro_por_dia_y_una_barra_por_mes():
     rects = list(raiz.iter(f"{NS}rect"))
     assert len([r for r in rects if r.get("class") == "dia"]) == 371
     assert len([r for r in rects if r.get("class") == "barra"]) == 3
+
+
+def test_panel_trae_la_culebrita_comiendose_el_calendario():
+    raiz = ET.fromstring(svg_panel(_datos()))
+    assert list(raiz.iter(f"{NS}animateMotion"))
+    texto = " ".join(raiz.itertext())
+    assert "culebrita" in texto

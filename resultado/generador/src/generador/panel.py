@@ -1,9 +1,9 @@
 """Panel ~$ whoami: calendario de contribuciones, cifras y barras por mes."""
 
-from datetime import date
 from xml.sax.saxutils import escape
 
-from generador.tema import BORDE, NIVELES, TENUE, TEXTO, VERDE, aparece, ventana
+from generador.culebrita import capa_culebrita
+from generador.tema import BORDE, TENUE, TEXTO, VERDE, aparece, ventana
 
 ANCHO, ALTO, CICLO = 860, 450, 4.0
 MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
@@ -11,25 +11,6 @@ MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "
 
 def _t(x, y, contenido, color=TEXTO, tamano=14, extra=""):
     return f'<text x="{x}" y="{y}" fill="{color}" font-size="{tamano}"{extra}>{escape(str(contenido))}</text>'
-
-
-def _calendario(dias: list[dict]) -> list[str]:
-    celda, paso, y0 = 12, 15, 84
-    # domingo = fila 0, igual que GitHub
-    desfase = (date.fromisoformat(dias[0]["fecha"]).weekday() + 1) % 7 if dias else 0
-    columnas: dict[int, list[str]] = {}
-    for i, d in enumerate(dias):
-        col, fila = divmod(i + desfase, 7)
-        columnas.setdefault(col, []).append(
-            f'<rect class="dia" x="{col * paso}" y="{y0 + fila * paso}" width="{celda}" height="{celda}" '
-            f'rx="2" fill="{NIVELES[d["nivel"]]}"/>'
-        )
-    x0 = (ANCHO - len(columnas) * paso) / 2
-    # cada semana aparece un poquito después de la anterior, de izquierda a derecha
-    return [
-        f'<g transform="translate({x0:.1f},0)" opacity="0">{aparece(0.1 + col * 0.015, CICLO, repetir=False)}{"".join(r)}</g>'
-        for col, r in sorted(columnas.items())
-    ]
 
 
 def _cifras(datos: dict) -> list[str]:
@@ -78,8 +59,11 @@ def _barras(meses: list[tuple[str, int]]) -> list[str]:
 
 def svg_panel(datos: dict) -> str:
     partes = [_t(32, 68, "~$ ./contributions.sh", VERDE, 15)]
-    partes += _calendario(datos["dias"])
-    partes.append(_t(32, 212, f'{datos["total"]} contribuciones en el último año', TENUE, 12))
+    partes += capa_culebrita(datos["dias"], 84)
+    activos = sum(1 for d in datos["dias"] if d["cantidad"])
+    partes.append(
+        _t(32, 212, f'{datos["total"]} contribuciones en el último año · la culebrita se come {activos} días', TENUE, 12)
+    )
     partes.append(f'<line x1="32" y1="230" x2="{ANCHO - 32}" y2="230" stroke="{BORDE}" stroke-dasharray="4 4"/>')
     partes += _cifras(datos)
     partes += _barras(datos["meses"])

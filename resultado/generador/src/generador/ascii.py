@@ -18,7 +18,6 @@ ARTE = ["".join(LETRAS[letra][fila] for letra in NOMBRE) for fila in range(6)]
 
 LINEAS_FINALES = [
     "> Juan José Ospina · Ingeniería de Sistemas · UPB Medellín",
-    "> construyo web apps, automatizaciones y herramientas con IA",
 ]
 
 ANCHO, ALTO, CICLO = 860, 340, 12.0
@@ -96,9 +95,10 @@ def svg_ascii() -> str:
     for i, linea in enumerate(LINEAS_FINALES):
         partes.append(_texto(30, 270 + i * 24, linea, TEXTO, 15, extra=aparece(t + i * 0.5, CICLO)))
     t_prompt = t + len(LINEAS_FINALES) * 0.5
-    partes.append(_texto(30, 322, "~$", VERDE, 16, extra=aparece(t_prompt, CICLO)))
+    y_prompt = 274 + len(LINEAS_FINALES) * 24  # justo debajo de la última línea
+    partes.append(_texto(30, y_prompt, "~$", VERDE, 16, extra=aparece(t_prompt, CICLO)))
     partes.append(
-        f'<rect x="58" y="308" width="10" height="18" fill="{VERDE}" opacity="0">{aparece(t_prompt, CICLO)}'
+        f'<rect x="58" y="{y_prompt - 14}" width="10" height="18" fill="{VERDE}" opacity="0">{aparece(t_prompt, CICLO)}'
         f'<animate attributeName="fill-opacity" values="1;0" dur="1s" calcMode="discrete" repeatCount="indefinite"/></rect>'
     )
-    return ventana(ANCHO, ALTO, "juann11@github: ~", "\n".join(partes))
+    return ventana(ANCHO, y_prompt + 26, "juann11@github: ~", "\n".join(partes))

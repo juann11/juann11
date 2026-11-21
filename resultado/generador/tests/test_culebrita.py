@@ -1,6 +1,6 @@
 import xml.etree.ElementTree as ET
 
-from generador.culebrita import recorrido, svg_culebrita
+from generador.culebrita import capa_culebrita, recorrido
 
 NS = "{http://www.w3.org/2000/svg}"
 
@@ -29,12 +29,16 @@ def test_recorrido_avanza_de_a_un_cuadro_y_pasa_por_todo_lo_activo():
 def test_sin_contribuciones_no_revienta():
     camino, comidos = recorrido(_dias([0] * 14))
     assert camino == [(0, 0)] and comidos == {}
-    ET.fromstring(svg_culebrita(_dias([0] * 14)))
+    ET.fromstring(_svg(capa_culebrita(_dias([0] * 14), 84)))
 
 
-def test_svg_valido_con_un_cuadro_por_dia_y_solo_se_comen_los_activos():
+def _svg(partes):
+    return f'<svg xmlns="http://www.w3.org/2000/svg">{"".join(partes)}</svg>'
+
+
+def test_capa_valida_con_un_cuadro_por_dia_y_solo_se_comen_los_activos():
     dias = _dias([i % 3 for i in range(60)])
-    raiz = ET.fromstring(svg_culebrita(dias))
+    raiz = ET.fromstring(_svg(capa_culebrita(dias, 84)))
     cuadros = [r for r in raiz.iter(f"{NS}rect") if r.get("class") == "dia"]
     assert len(cuadros) == 60
     comidos = [r for r in cuadros if r.find(f"{NS}animate") is not None]

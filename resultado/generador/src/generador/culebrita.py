@@ -2,10 +2,10 @@
 
 from datetime import date
 
-from generador.tema import NIVELES, TENUE, VERDE, ventana
+from generador.tema import NIVELES
 
-ANCHO, ALTO = 860, 212
-CELDA, PASO, Y0 = 12, 15, 62
+ANCHO = 860
+CELDA, PASO = 12, 15
 SEG_POR_PASO, LARGO = 0.07, 6
 
 
@@ -39,16 +39,14 @@ def recorrido(dias: list[dict]) -> tuple[list[tuple[int, int]], dict[tuple[int, 
     return camino, comidos
 
 
-def svg_culebrita(dias: list[dict]) -> str:
+def capa_culebrita(dias: list[dict], y0: float) -> list[str]:
+    """Calendario centrado en el ancho, con la culebrita comiéndoselo. Arranca en la altura y0."""
     posiciones = _posiciones(dias)
     camino, comidos = recorrido(dias)
     columnas = max((c for c, _ in posiciones), default=0) + 1
     x0 = (ANCHO - columnas * PASO) / 2
     duracion = (len(camino) + LARGO) * SEG_POR_PASO + 1.5
-    partes = [
-        f'<text x="32" y="56" fill="{VERDE}" font-size="15">~$ ./culebrita.sh</text>',
-        f'<g transform="translate({x0:.1f},10)">',
-    ]
+    partes = [f'<g transform="translate({x0:.1f},{y0})">']
 
     # el calendario: cada día comido se apaga cuando llega la cabeza y revive al final del ciclo
     for (col, fila), d in zip(posiciones, dias):
@@ -61,12 +59,12 @@ def svg_culebrita(dias: list[dict]) -> str:
                 f'keyTimes="0;{t:.4f};0.97" dur="{duracion:.2f}s" calcMode="discrete" repeatCount="indefinite"/>'
             )
         partes.append(
-            f'<rect class="dia" x="{col * PASO}" y="{Y0 + fila * PASO}" width="{CELDA}" height="{CELDA}" '
+            f'<rect class="dia" x="{col * PASO}" y="{fila * PASO}" width="{CELDA}" height="{CELDA}" '
             f'rx="2" fill="{color}">{anim}</rect>'
         )
 
     # la culebrita: cada segmento hace el mismo camino, un paso detrás del anterior
-    ruta = "M" + " L".join(f"{c * PASO} {Y0 + f * PASO}" for c, f in camino)
+    ruta = "M" + " L".join(f"{c * PASO} {f * PASO}" for c, f in camino)
     recorrido_seg = (len(camino) - 1) * SEG_POR_PASO
     for k in range(LARGO):
         arranca = k * SEG_POR_PASO / duracion
@@ -78,8 +76,4 @@ def svg_culebrita(dias: list[dict]) -> str:
             f'keyPoints="0;0;1;1" keyTimes="0;{arranca:.4f};{termina:.4f};1"/></rect>'
         )
     partes.append("</g>")
-    partes.append(
-        f'<text x="32" y="{ALTO - 16}" fill="{TENUE}" font-size="12">'
-        f"comiéndose {len(comidos)} días con contribuciones</text>"
-    )
-    return ventana(ANCHO, ALTO, "juann11@github: ~/juegos", "\n".join(partes))
+    return partes
